@@ -4,8 +4,10 @@ import base64
 from PIL import Image
 from io import BytesIO
 from flask import Flask, request
+from flask_cors import CORS
 
 app = Flask(__name__)
+app = CORS(app)
 
 model = YOLO('weights/best.pt')
 

@@ -1,4 +1,5 @@
 ultralytics
 Flask
+flask-cors
 numpy
 gunicorn
