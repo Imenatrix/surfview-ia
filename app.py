@@ -11,27 +11,63 @@ CORS(app)
 
 model = YOLO('weights/best.pt')
 
+
 def predict(image_string):
     image_bytes = base64.b64decode(image_string)
     image = Image.open(BytesIO(image_bytes))
 
-    results = model.predict(image, conf=0.25, device='cpu')
+    return model.predict(image, conf=0.25, device='cpu')
 
-    classes = results[0].boxes.cls
-    names = results[0].names
+
+def _count(image_string):
+    results = predict(image_string)
+    result = results[0]
+
+    classes = result.boxes.cls
+    names = result.names
 
     unique, counts = np.unique(classes.cpu(), return_counts=True)
     unique = map(lambda x: names[x], unique)
     counts = map(lambda x: int(x), counts)
 
-    out = dict(zip(unique, counts))
+    return dict(zip(unique, counts))
+
+
+def _infer(image_string):
+    results = predict(image_string)
+    result = results[0]
+    classes = result.names
+
+    out = {
+        'classes': classes,
+        'objects': []
+    }
+
+    objects = result.boxes.data.cpu().tolist()
+
+    for object in objects:
+        out['objects'].append({
+            'x0': object[0],
+            'y0': object[1],
+            'x1': object[2],
+            'y1': object[3],
+            'confidence': object[4],
+            'class': object[5]
+        })
+
     return out
 
 
 @app.post('/count')
 def count():
     image = request.json['image']
-    return predict(image)
+    return _count(image)
+
+
+@app.post('/predict')
+def infer():
+    image = request.json['image']
+    return _infer(image)
 
 
 if __name__ == "__main__":
